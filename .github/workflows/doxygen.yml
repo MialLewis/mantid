@@ -1,6 +1,10 @@
-name: doxygen pull request workflow
-
-on: push
+name: doxygen documentation build test
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
 
 jobs:
   doxygen:
