@@ -160,7 +160,7 @@ bool Algorithm::isExecuted() const {
 bool Algorithm::isChild() const { return m_isChildAlgorithm; }
 
 /** To set whether algorithm is a child.
- *  @param isChild :: True - the algorithm is a child algorithm.  False - this
+ *  @param isChildtest :: True - the algorithm is a child algorithm.  False - this
  * is a full managed algorithm.
  */
 void Algorithm::setChild(const bool isChild) {
