@@ -487,6 +487,7 @@ set(TEST_FILES
     SpectraAxisValidatorTest.h
     SpectrumDetectorMappingTest.h
     SpectrumInfoTest.h
+    TaskBasedAlgorithmTest.h
     TextAxisTest.h
     TimeAtSampleStrategyDirectTest.h
     TimeAtSampleStrategyElasticTest.h
