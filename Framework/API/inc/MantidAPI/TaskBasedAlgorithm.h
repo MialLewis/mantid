@@ -17,6 +17,9 @@
 namespace Mantid::API {
 
 template <class T> class TaskBasedAlgorithm : virtual public API::DataProcessorAlgorithm {
+public:
+  TaskBasedAlgorithm() : m_mutableInput(false) {}
+
 protected:
   class AlgorithmTask {
   public:
@@ -55,7 +58,6 @@ protected:
       executeImpl();
       checkExpectedOutputs();
       m_parent->g_log.debug("Finished executing task: " + m_name + "\n");
-      // ADD CLEAN UP OF MEMBER OJBECTS
     }
     const std::vector<std::string> &getExpectedOutputs() const { return m_expectedOutputs; }
     void setExpectedOutputs(const std::vector<std::string> &expectedOutputs) { m_expectedOutputs = expectedOutputs; }
@@ -222,8 +224,15 @@ protected:
   void stageAlgorithmTasks(std::vector<std::shared_ptr<AlgorithmTask>> tasks) {
     if (tasks.empty())
       return;
-    // for first task in sequence, feed in the input workspace
+    // for first task in sequence, pass in input workspace (prevent mutating of input by default)
     API::MatrixWorkspace_sptr inputWS = getProperty("InputWorkspace");
+    if (!m_mutableInput) {
+      auto cloneAlg = createChildAlgorithm("CloneWorkspace");
+      cloneAlg->setProperty("InputWorkspace", inputWS);
+      cloneAlg->execute();
+      Workspace_sptr clone = cloneAlg->getProperty("OutputWorkspace");
+      inputWS = std::dynamic_pointer_cast<MatrixWorkspace>(clone);
+    }
     tasks[0]->initAsFirstTask(inputWS);
     m_stagedAlgorithmTasks = tasks;
   }
@@ -288,7 +297,11 @@ protected:
     return teo;
   };
 
+  // Allows the tasks to mutate the original input workspace
+  void setMutableInput(const bool inputIsMutable) { m_mutableInput = inputIsMutable; }
+
   std::vector<std::shared_ptr<AlgorithmTask>> m_AlgorithmTasks;
   std::vector<std::string> m_taskExecutionOrder;
+  bool m_mutableInput;
 };
 } // namespace Mantid::API

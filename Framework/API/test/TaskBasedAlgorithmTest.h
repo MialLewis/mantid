@@ -31,7 +31,8 @@ public:
                         "OutputWorkspace", "", Mantid::Kernel::Direction::Output),
                     "Output workspace from final task");
     initTaskBasedAlgorithm<TaskA, TaskB, TaskC, TaskD, TaskDAlt>();
-  };
+  }
+  void enableMutableInput() { setMutableInput(true); }
   void exec() override {
     configureAlgorithmTasks();
     execTasks();
@@ -256,6 +257,47 @@ public:
     m_alg->execute();
     Mantid::API::MatrixWorkspace_sptr outputWS = m_alg->getProperty("OutputWorkspace");
     compareVectors(outputWS->readY(0), {0.0, 1.667, 3.333, 5.0, 6.667});
+  }
+
+  // Simulate being called through algorithm dialog
+  void testTaskBasedAlgorithmWorksWithConsecutiveCalls() {
+    m_alg->initialize();
+    m_alg->setAlwaysStoreInADS(false);
+    m_alg->setProperty("TaskExecutionOrder", "TaskA, TaskB, TaskC, TaskD");
+    Mantid::API::MatrixWorkspace_sptr inputWS = makeMatrixWorkspaceFromVector({1.0, 2.0, 3.0, 4.0, 5.0});
+    m_alg->setProperty("InputWorkspace", inputWS);
+    m_alg->setProperty("OutputWorkspace", "test_ws");
+    m_alg->execute();
+    m_alg->setProperty("TaskExecutionOrder", "TaskA, TaskB, TaskD");
+    m_alg->execute();
+    Mantid::API::MatrixWorkspace_sptr outputWS = m_alg->getProperty("OutputWorkspace");
+    compareVectors(outputWS->readY(0), {2.50, 7.50, 12.50, 17.50, 22.50});
+  }
+
+  void testTaskBasedAlgorithmDoesNotMutateInput() {
+    m_alg->initialize();
+    m_alg->setAlwaysStoreInADS(false);
+    m_alg->setProperty("TaskExecutionOrder", "TaskA");
+    Mantid::API::MatrixWorkspace_sptr inputWS = makeMatrixWorkspaceFromVector({1.0, 2.0, 3.0, 4.0, 5.0});
+    m_alg->setProperty("InputWorkspace", inputWS);
+    m_alg->setProperty("OutputWorkspace", "test_ws");
+    m_alg->execute();
+    compareVectors(inputWS->readY(0), {1.0, 2.0, 3.0, 4.0, 5.0});
+  }
+
+  void testTaskBasedAlgorithmDoesMutateInputIfSet() {
+    m_alg->initialize();
+    m_alg->setAlwaysStoreInADS(false);
+    m_alg->setProperty("TaskExecutionOrder", "TaskA");
+    Mantid::API::MatrixWorkspace_sptr inputWS = makeMatrixWorkspaceFromVector({1.0, 2.0, 3.0, 4.0, 5.0});
+    m_alg->setProperty("InputWorkspace", inputWS);
+    m_alg->setProperty("OutputWorkspace", "test_ws");
+
+    auto alg = dynamic_pointer_cast<ToyTaskBasedAlg>(m_alg);
+    alg->enableMutableInput();
+
+    m_alg->execute();
+    compareVectors(inputWS->readY(0), {5.0, 10.0, 15.0, 20.0, 25.0});
   }
 
 private:
