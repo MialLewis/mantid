@@ -6,8 +6,12 @@
 // SPDX - License - Identifier: GPL - 3.0 +
 #pragma once
 #include <algorithm>
+#include <limits>
+#include <numeric>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "AnalysisDataService.h"
@@ -104,6 +108,8 @@ protected:
 
     virtual void executeImpl() = 0;
 
+    // if dependent outputs have been supplied, check they are fulfillable. If not, take all outputs from any specified
+    // tasks.
     bool populateDependantTasks(const size_t taskSetIndex) {
       for (auto &item : m_dependantTasks[taskSetIndex]) {
         const auto &taskName = item.first;
@@ -238,6 +244,7 @@ protected:
     m_taskExecutionOrder =
         isDefault("TaskExecutionOrder") ? constructTaskExecutionOrder() : getProperty("TaskExecutionOrder");
     std::vector<std::shared_ptr<AlgorithmTask>> tasksToStage(m_taskExecutionOrder.size());
+    validateTaskExecutionOrder();
     for (auto &task : m_AlgorithmTasks) {
       task->setTaskExecutionOrder(&m_taskExecutionOrder);
       auto it = std::find(m_taskExecutionOrder.begin(), m_taskExecutionOrder.end(), task->name());
@@ -247,6 +254,20 @@ protected:
       }
     }
     stageAlgorithmTasks(tasksToStage);
+  }
+
+  void validateTaskExecutionOrder() {
+    std::unordered_set<std::string> testSet;
+    testSet.reserve(m_taskExecutionOrder.size());
+    for (const auto &task : m_taskExecutionOrder) {
+      auto it = std::find_if(m_AlgorithmTasks.cbegin(), m_AlgorithmTasks.cend(),
+                             [&](const auto &algorithmTask) { return algorithmTask->name() == task; });
+      if (it == m_AlgorithmTasks.cend())
+        throw std::runtime_error("Invalid task specified in TaskExecutionOrder: " + task);
+      auto [taskIt, inserted] = testSet.insert(task);
+      if (!inserted)
+        throw std::runtime_error("Duplicate task specified in TaskExecutionOrder, this is not yet supported: " + task);
+    }
   }
 
   void execTasks(const std::string &diagWorkspacePrefix = "") {

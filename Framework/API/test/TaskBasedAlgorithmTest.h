@@ -33,10 +33,7 @@ public:
     initTaskBasedAlgorithm<TaskA, TaskB, TaskC, TaskD, TaskDAlt, TaskE>();
   }
   void enableMutableInput() { setMutableInput(true); }
-  void exec() override {
-    configureAlgorithmTasks();
-    execTasks();
-  };
+  void exec() override { execTasks(); };
 
   // Possible orders tested:
   // 1) A, B, C, D
@@ -268,6 +265,20 @@ public:
     Mantid::API::MatrixWorkspace_sptr inputWS = makeMatrixWorkspaceFromVector({1.0, 2.0, 3.0, 4.0, 5.0});
     m_alg->setProperty("InputWorkspace", inputWS);
     m_alg->setProperty("OutputWorkspace", "test_ws");
+    m_alg->setRethrows(true);
+    TS_ASSERT_THROWS_ANYTHING(m_alg->execute());
+  }
+
+  void testTaskBasedAlgorithmThrowsIfInvalidTaskSpecified() {
+    m_alg->initialize();
+    m_alg->setProperty("TaskExecutionOrder", "TaskA, TaskD, TaskZ");
+    m_alg->setRethrows(true);
+    TS_ASSERT_THROWS_ANYTHING(m_alg->execute());
+  }
+
+  void testTaskBasedAlgorithmThrowsIfDuplicateTaskSpecified() {
+    m_alg->initialize();
+    m_alg->setProperty("TaskExecutionOrder", "TaskA, TaskD, TaskA");
     m_alg->setRethrows(true);
     TS_ASSERT_THROWS_ANYTHING(m_alg->execute());
   }
