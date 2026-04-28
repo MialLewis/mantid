@@ -191,7 +191,7 @@ public:
     Mantid::API::AlgorithmFactory::Instance().subscribe<ToyTaskBasedAlg>();
   }
 
-  ~TaskBasedAlgorithmTest() override { Mantid::API::AlgorithmFactory::Instance().unsubscribe("ToyAlgorithm", 1); }
+  ~TaskBasedAlgorithmTest() override { Mantid::API::AlgorithmFactory::Instance().unsubscribe("ToyTaskBasedAlg", 1); }
 
   void setUp() override { m_alg = Mantid::API::AlgorithmManager::Instance().create("ToyTaskBasedAlg"); }
 

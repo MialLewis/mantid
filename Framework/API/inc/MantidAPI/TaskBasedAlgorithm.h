@@ -273,22 +273,28 @@ protected:
   void execTasks(const std::string &diagWorkspacePrefix = "") {
     configureAlgorithmTasks();
     int step = 0;
-    for (size_t i = 0; i < m_stagedAlgorithmTasks.size(); ++i) {
-      const auto &task = m_stagedAlgorithmTasks[i];
-      task->execute();
-      if (!diagWorkspacePrefix.empty()) {
-        const auto &taskOutput = m_algorithmTaskOutputs.at(task->name());
-        for (const auto &output : taskOutput) {
-          const auto &outputName = output.first;
-          outputDebugWorkspace(output.second, diagWorkspacePrefix, "_" + outputName, step);
+
+    try {
+      for (size_t i = 0; i < m_stagedAlgorithmTasks.size(); ++i) {
+        const auto &task = m_stagedAlgorithmTasks[i];
+        task->execute();
+        if (!diagWorkspacePrefix.empty()) {
+          const auto &taskOutput = m_algorithmTaskOutputs.at(task->name());
+          for (const auto &output : taskOutput) {
+            const auto &outputName = output.first;
+            outputDebugWorkspace(output.second, diagWorkspacePrefix, "_" + outputName, step);
+          }
+          step++;
         }
-        step++;
+        // Output the selected output of the last task
+        if (i == m_stagedAlgorithmTasks.size() - 1)
+          setProperty("OutputWorkspace", m_algorithmTaskOutputs.at(task->name()).at(task->getSelectedOutput()));
       }
-      // Output the selected output of the last task
-      if (i == m_stagedAlgorithmTasks.size() - 1)
-        setProperty("OutputWorkspace", m_algorithmTaskOutputs.at(task->name()).at(task->getSelectedOutput()));
+      clearMembers();
+    } catch (...) { // ensure members are cleared even if error is throw during execution
+      clearMembers();
+      throw;
     }
-    clearMembers();
   }
 
   void clearMembers() {
