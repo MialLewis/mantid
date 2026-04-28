@@ -128,8 +128,7 @@ protected:
       } else if (m_fulfilledDependantTaskSets.size() == 0) {
         return;
       }
-      // We have multiple fulfilled task sets, how do we choose between them?
-      // Lets select based on the execution order of tasks.
+      // We have multiple fulfilled task sets - select based on the execution order of tasks.
       // The task set containing the task executed in closest proximity to this task wins.
       const auto myIt = std::find(m_taskExecutionOrder->cbegin(), m_taskExecutionOrder->cend(), m_name);
       const auto myIndex = std::distance(m_taskExecutionOrder->cbegin(), myIt);
@@ -167,12 +166,10 @@ protected:
       }
     }
 
-    // check if output from dependant tasks is available in m_algorithmTaskOutputs
-    // this could be supplied by dependant tasks, or manually setting algorithm properties
+    // check if output from dependant tasks is available in m_algorithmTaskOutputs. This is set by dependant tasks
     std::vector<std::string> evaluateDependentTasks() {
       // If this is the first task, we expect the dependant outputs to be set as algorithm properties rather than
       // outputs from other tasks
-      // TODO: Check that required input properties are provided. Currently we just take the input workspace
       if (m_firstTaskFlag)
         return {};
       std::vector<std::string> missingTasksAll;
@@ -181,7 +178,6 @@ protected:
         // if task set is unfulfillable due to missing tasks
         std::vector<std::string> missingTasks;
         if (!populateDependantTasks(i)) {
-          // TODO: print out required tasks
           missingTasks.push_back("Task set " + std::to_string(i) + " unfulfillable as required tasks not staged.");
         } else {
           for (const auto &[taskName, outputs] : m_dependantTasks[i]) {
