@@ -9,6 +9,7 @@
 #include <cxxtest/TestSuite.h>
 
 #include "MantidAPI/AlgorithmFactory.h"
+#include "MantidAPI/AnalysisDataService.h"
 #include "MantidAPI/FrameworkManager.h"
 #include "MantidAPI/TaskBasedAlgorithm.h"
 
@@ -47,6 +48,7 @@ public:
       auto inputWS = getDependantWorkspace("InputWorkspace");
       m_parent->scaleWorkspace(inputWS, 5.0);
       outputWorkspace(inputWS, "TaskAOutput");
+      m_parent->outputDebugWorkspace(inputWS, "debug_test", "SUFF", 0);
     };
   };
 
@@ -187,7 +189,7 @@ public:
 
   TaskBasedAlgorithmTest() {
     Mantid::API::FrameworkManager::Instance();
-    // AnalysisDataService::Instance();
+    Mantid::API::AnalysisDataService::Instance();
     Mantid::API::AlgorithmFactory::Instance().subscribe<ToyTaskBasedAlg>();
   }
 
@@ -195,9 +197,7 @@ public:
 
   void setUp() override { m_alg = Mantid::API::AlgorithmManager::Instance().create("ToyTaskBasedAlg"); }
 
-  void tearDown() override {
-    // AnalysisDataService::Instance().clear();
-  }
+  void tearDown() override { Mantid::API::AnalysisDataService::Instance().clear(); }
 
   void compareVectors(const std::vector<double> &vec1, const std::vector<double> &vec2) {
     if (vec1.size() != vec2.size()) {
@@ -334,6 +334,16 @@ public:
 
     m_alg->execute();
     compareVectors(inputWS->readY(0), {5.0, 10.0, 15.0, 20.0, 25.0});
+  }
+
+  void testTaskOutputDebugWorkspace() {
+    m_alg->initialize();
+    m_alg->setAlwaysStoreInADS(false);
+    m_alg->setProperty("TaskExecutionOrder", "TaskA");
+    Mantid::API::MatrixWorkspace_sptr inputWS = makeMatrixWorkspaceFromVector({1.0, 2.0, 3.0, 4.0, 5.0});
+    m_alg->setProperty("InputWorkspace", inputWS);
+    m_alg->execute();
+    TS_ASSERT(Mantid::API::AnalysisDataService::Instance().doesExist("debug_test_0SUFF"));
   }
 
 private:

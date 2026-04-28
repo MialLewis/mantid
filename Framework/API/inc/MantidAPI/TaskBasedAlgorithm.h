@@ -306,8 +306,7 @@ protected:
 
   void outputDebugWorkspace(const MatrixWorkspace_sptr &ws, const std::string &wsName, const std::string &wsSuffix,
                             const int step) {
-    // Clone the workspace because otherwise we can end up outputting the same
-    // workspace twice with different names, which is confusing.
+    // Clone the workspace to preserve its state as this instance
     MatrixWorkspace_sptr cloneWS = ws->clone();
     AnalysisDataService::Instance().addOrReplace(wsName + "_" + std::to_string(step) + wsSuffix, cloneWS);
   }
