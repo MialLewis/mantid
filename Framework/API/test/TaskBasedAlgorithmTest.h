@@ -30,7 +30,7 @@ public:
     declareProperty(std::make_unique<Mantid::API::WorkspaceProperty<Mantid::API::MatrixWorkspace>>(
                         "OutputWorkspace", "", Mantid::Kernel::Direction::Output),
                     "Output workspace from final task");
-    initTaskBasedAlgorithm<TaskA, TaskB, TaskC, TaskD>();
+    initTaskBasedAlgorithm<TaskA, TaskB, TaskC, TaskD, TaskDAlt>();
   };
   void exec() override {
     configureAlgorithmTasks();
@@ -86,14 +86,13 @@ public:
     };
   };
 
-  class TaskD final : public AlgorithmTask {
+  class TaskDBase : public AlgorithmTask {
   public:
-    explicit TaskD(ToyTaskBasedAlg *parent) : AlgorithmTask(parent, "TaskD") {
+    explicit TaskDBase(ToyTaskBasedAlg *parent, const std::string &name) : AlgorithmTask(parent, name) {
       setExpectedOutputs({"TaskDOutput1", "TaskDOutput2"});
       setDependantTask("TaskC", "TaskCOutput", "InputWorkspace");
       auto depSet = addDependantTaskSet();
       setDependantTask("TaskB", "TaskBOutput2", "InputWorkspace", depSet);
-      setSelectedOutput("TaskDOutput2");
     }
     void executeImpl() override {
       auto inputWS = getDependantWorkspace("InputWorkspace");
@@ -103,7 +102,18 @@ public:
       m_parent->translateWorkspace(cloneWS2, -3.75);
       outputWorkspace(cloneWS1, "TaskDOutput1");
       outputWorkspace(cloneWS2, "TaskDOutput2");
-    };
+    }
+  };
+
+  class TaskD final : public TaskDBase {
+  public:
+    explicit TaskD(ToyTaskBasedAlg *parent) : TaskDBase(parent, "TaskD") { setSelectedOutput("TaskDOutput2"); }
+  };
+
+  // Task D with an alternate selected output.
+  class TaskDAlt final : public TaskDBase {
+  public:
+    explicit TaskDAlt(ToyTaskBasedAlg *parent) : TaskDBase(parent, "TaskDAlt") { setSelectedOutput("TaskDOutput1"); }
   };
 
   Mantid::API::MatrixWorkspace_sptr cloneWorkspace(const Mantid::API::MatrixWorkspace_sptr &ws) {
@@ -223,6 +233,29 @@ public:
     m_alg->execute();
     Mantid::API::MatrixWorkspace_sptr outputWS = m_alg->getProperty("OutputWorkspace");
     compareVectors(outputWS->readY(0), {2.50, 7.50, 12.50, 17.50, 22.50});
+  }
+
+  void testTaskBasedAlgorithmThrowsWhenNoTaskSetCanBeFulfilled() {
+    m_alg->initialize();
+    m_alg->setAlwaysStoreInADS(false);
+    m_alg->setProperty("TaskExecutionOrder", "TaskA, TaskD");
+    Mantid::API::MatrixWorkspace_sptr inputWS = makeMatrixWorkspaceFromVector({1.0, 2.0, 3.0, 4.0, 5.0});
+    m_alg->setProperty("InputWorkspace", inputWS);
+    m_alg->setProperty("OutputWorkspace", "test_ws");
+    m_alg->setRethrows(true);
+    TS_ASSERT_THROWS_ANYTHING(m_alg->execute());
+  }
+
+  void testTaskBasedAlgorithmABCDAlternateOutput() {
+    m_alg->initialize();
+    m_alg->setAlwaysStoreInADS(false);
+    m_alg->setProperty("TaskExecutionOrder", "TaskA, TaskB, TaskC, TaskDAlt");
+    Mantid::API::MatrixWorkspace_sptr inputWS = makeMatrixWorkspaceFromVector({1.0, 2.0, 3.0, 4.0, 5.0});
+    m_alg->setProperty("InputWorkspace", inputWS);
+    m_alg->setProperty("OutputWorkspace", "test_ws");
+    m_alg->execute();
+    Mantid::API::MatrixWorkspace_sptr outputWS = m_alg->getProperty("OutputWorkspace");
+    compareVectors(outputWS->readY(0), {0.0, 1.667, 3.333, 5.0, 6.667});
   }
 
 private:
