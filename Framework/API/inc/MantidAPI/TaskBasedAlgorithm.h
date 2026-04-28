@@ -185,7 +185,7 @@ protected:
         // if task set is unfulfillable due to missing tasks
         std::vector<std::string> missingTasks;
         if (!populateDependantTasks(i)) {
-          missingTasks.push_back("Task set " + std::to_string(i) + " unfulfillable as required tasks not staged.");
+          missingTasks.push_back("Task set " + std::to_string(i) + " unfulfillable as required tasks not staged");
         } else {
           for (const auto &[taskName, outputs] : m_dependantTasks[i]) {
             if (!m_parent->m_algorithmTaskOutputs.contains(taskName)) {

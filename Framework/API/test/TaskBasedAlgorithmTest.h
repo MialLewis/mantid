@@ -266,21 +266,25 @@ public:
     m_alg->setProperty("InputWorkspace", inputWS);
     m_alg->setProperty("OutputWorkspace", "test_ws");
     m_alg->setRethrows(true);
-    TS_ASSERT_THROWS_ANYTHING(m_alg->execute());
+    TSM_ASSERT_THROWS(
+        "Cannot execute task TaskD as the following dependent tasks outputs are not available: Task set 0 "
+        "unfulfillable as required tasks not staged, Task set 1 unfulfillable as required tasks not staged",
+        m_alg->execute(), std::runtime_error);
   }
 
   void testTaskBasedAlgorithmThrowsIfInvalidTaskSpecified() {
     m_alg->initialize();
     m_alg->setProperty("TaskExecutionOrder", "TaskA, TaskD, TaskZ");
     m_alg->setRethrows(true);
-    TS_ASSERT_THROWS_ANYTHING(m_alg->execute());
+    TSM_ASSERT_THROWS("Invalid task specified in TaskExecutionOrder: TaskZ", m_alg->execute(), std::runtime_error);
   }
 
   void testTaskBasedAlgorithmThrowsIfDuplicateTaskSpecified() {
     m_alg->initialize();
     m_alg->setProperty("TaskExecutionOrder", "TaskA, TaskD, TaskA");
     m_alg->setRethrows(true);
-    TS_ASSERT_THROWS_ANYTHING(m_alg->execute());
+    TSM_ASSERT_THROWS("Duplicate task specified in TaskExecutionOrder, this is not yet supported: TaskA",
+                      m_alg->execute(), std::runtime_error);
   }
 
   void testTaskBasedAlgorithmABCDAlternateOutput() {
