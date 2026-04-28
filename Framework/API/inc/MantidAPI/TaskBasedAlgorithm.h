@@ -70,6 +70,7 @@ protected:
       m_taskExecutionOrder = taskExecutionOrder;
     }
     const std::string &getSelectedOutput() const { return m_selectedOutput; }
+    void clear() { m_fulfilledDependantTaskSets.clear(); }
 
   protected:
     T *m_parent;
@@ -79,7 +80,7 @@ protected:
     }
 
     std::shared_ptr<MatrixWorkspace> getDependantWorkspace(const std::string &outputAlias) {
-      return m_dependantOutputs[m_activeDependantTaskSet][outputAlias];
+      return m_dependantOutputs[m_activeDependantTaskSet].at(outputAlias);
     }
 
     void setSelectedOutput(const std::string &output, const bool overwrite = false) {
@@ -266,6 +267,14 @@ protected:
       if (i == m_stagedAlgorithmTasks.size() - 1)
         setProperty("OutputWorkspace", m_algorithmTaskOutputs.at(task->name()).at(task->getSelectedOutput()));
     }
+    clearMembers();
+  }
+
+  void clearMembers() {
+    for (auto &task : m_stagedAlgorithmTasks) {
+      task->clear();
+    }
+    m_algorithmTaskOutputs.clear();
   }
 
   void outputDebugWorkspace(const MatrixWorkspace_sptr &ws, const std::string &wsName, const std::string &wsSuffix,

@@ -30,7 +30,7 @@ public:
     declareProperty(std::make_unique<Mantid::API::WorkspaceProperty<Mantid::API::MatrixWorkspace>>(
                         "OutputWorkspace", "", Mantid::Kernel::Direction::Output),
                     "Output workspace from final task");
-    initTaskBasedAlgorithm<TaskA, TaskB, TaskC, TaskD, TaskDAlt>();
+    initTaskBasedAlgorithm<TaskA, TaskB, TaskC, TaskD, TaskDAlt, TaskE>();
   }
   void enableMutableInput() { setMutableInput(true); }
   void exec() override {
@@ -115,6 +115,19 @@ public:
   class TaskDAlt final : public TaskDBase {
   public:
     explicit TaskDAlt(ToyTaskBasedAlg *parent) : TaskDBase(parent, "TaskDAlt") { setSelectedOutput("TaskDOutput1"); }
+  };
+
+  class TaskE final : public AlgorithmTask {
+  public:
+    explicit TaskE(ToyTaskBasedAlg *parent) : AlgorithmTask(parent, "TaskE") {
+      setExpectedOutputs({"TaskEOutput"});
+      setDependantTask("TaskD");
+    }
+    void executeImpl() override {
+      auto inputWS = getDependantWorkspace("TaskDOutput2");
+      m_parent->translateWorkspace(inputWS, 1.0);
+      outputWorkspace(inputWS, "TaskEOutput");
+    };
   };
 
   Mantid::API::MatrixWorkspace_sptr cloneWorkspace(const Mantid::API::MatrixWorkspace_sptr &ws) {
@@ -234,6 +247,18 @@ public:
     m_alg->execute();
     Mantid::API::MatrixWorkspace_sptr outputWS = m_alg->getProperty("OutputWorkspace");
     compareVectors(outputWS->readY(0), {2.50, 7.50, 12.50, 17.50, 22.50});
+  }
+
+  void testTaskENoOutputSpecified() {
+    m_alg->initialize();
+    m_alg->setAlwaysStoreInADS(false);
+    m_alg->setProperty("TaskExecutionOrder", "TaskA, TaskB, TaskC, TaskD, TaskE");
+    Mantid::API::MatrixWorkspace_sptr inputWS = makeMatrixWorkspaceFromVector({1.0, 2.0, 3.0, 4.0, 5.0});
+    m_alg->setProperty("InputWorkspace", inputWS);
+    m_alg->setProperty("OutputWorkspace", "test_ws");
+    m_alg->execute();
+    Mantid::API::MatrixWorkspace_sptr outputWS = m_alg->getProperty("OutputWorkspace");
+    compareVectors(outputWS->readY(0), {-0.25, 1.4167, 3.0833, 4.75, 6.4167});
   }
 
   void testTaskBasedAlgorithmThrowsWhenNoTaskSetCanBeFulfilled() {
