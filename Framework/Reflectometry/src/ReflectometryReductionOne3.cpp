@@ -1085,7 +1085,7 @@ void ReflectometryReductionOne3::verifySpectrumMaps(const MatrixWorkspace_const_
 void ReflectometryReductionOne3::TaskBackgroundSubtraction::executeImpl() {
   auto detectorWS = getDependantWorkspace("InputWorkspace");
   MatrixWorkspace_sptr corrected = m_parent->backgroundSubtraction(detectorWS);
-  outputWorkspace(corrected, "BackgroundSubtractedWorkspace");
+  outputWorkspace(corrected, Tasks::BackgroundSubtraction::Outputs::BackgroundSubtractedWorkspace);
 }
 
 void ReflectometryReductionOne3::TaskConvertToWavelength::executeImpl() {
@@ -1095,35 +1095,33 @@ void ReflectometryReductionOne3::TaskConvertToWavelength::executeImpl() {
     m_parent->findWavelengthMinMax(result);
     m_parent->m_wavelengthMinMaxSet = true;
   }
-  outputWorkspace(result, "ConvertedWorkspaceWavelength");
+  outputWorkspace(result, Tasks::ConvertToWavelength::Outputs::ConvertedWorkspaceWavelength);
 }
 
 void ReflectometryReductionOne3::TaskNormalizeByMonitor::executeImpl() {
   auto inputWS = getDependantWorkspace("InputWorkspace");
   MatrixWorkspace_sptr normalized = m_parent->monitorCorrection(inputWS);
-  outputWorkspace(normalized, "MonitorCorrectedWorkspace");
+  outputWorkspace(normalized, Tasks::NormalizeByMonitor::Outputs::MonitorCorrectedWorkspace);
 }
 
 void ReflectometryReductionOne3::TaskNormalizeByTransmission::executeImpl() {
   auto inputWS = getDependantWorkspace("InputWorkspace");
-  std::string corrWSName = "TransmissionCorrectedWorkspace";
   auto [transmissionCorrected, transmission] = m_parent->transmissionCorrection(inputWS);
-  outputWorkspace(transmissionCorrected, corrWSName);
-  outputWorkspace(transmission, "TransmissionWorkspace");
-
-  setSelectedOutput(corrWSName, true);
+  outputWorkspace(transmissionCorrected, Tasks::NormalizeByTransmission::Outputs::TransmissionCorrectedWorkspace);
+  outputWorkspace(transmission, Tasks::NormalizeByTransmission::Outputs::TransmissionWorkspace);
+  setSelectedOutput(Tasks::NormalizeByTransmission::Outputs::TransmissionCorrectedWorkspace, true);
 }
 
 void ReflectometryReductionOne3::TaskExtractROI::executeImpl() {
   auto inputWS = getDependantWorkspace("InputWorkspace");
   auto extracted = m_parent->makeDetectorWS(inputWS, false, false);
-  outputWorkspace(extracted, "ExtractedROIWorkspace");
+  outputWorkspace(extracted, Tasks::ExtractROI::Outputs::ExtractedROIWorkspace);
 }
 
 void ReflectometryReductionOne3::TaskSumDetectors::executeImpl() {
   auto inputWS = getDependantWorkspace("InputWorkspace");
   auto summed = m_parent->makeDetectorWS(inputWS, false, true);
-  outputWorkspace(summed, "SummedWorkspace");
+  outputWorkspace(summed, Tasks::SumDetectors::Outputs::SummedWorkspace);
 }
 
 void ReflectometryReductionOne3::TaskCropWavelength::executeImpl() {
@@ -1133,7 +1131,7 @@ void ReflectometryReductionOne3::TaskCropWavelength::executeImpl() {
     m_parent->m_wavelengthMinMaxSet = true;
   }
   auto cropped = m_parent->cropWavelength(inputWS, true, m_parent->wavelengthMin(), m_parent->wavelengthMax());
-  outputWorkspace(cropped, "CroppedWorkspace");
+  outputWorkspace(cropped, Tasks::CropWavelength::Outputs::CroppedWorkspace);
 }
 
 void ReflectometryReductionOne3::TaskConvertToQ::executeImpl() {
@@ -1145,19 +1143,19 @@ void ReflectometryReductionOne3::TaskConvertToQ::executeImpl() {
   // Outputs the converted workspace
   if (!m_parent->isDefault("OutputWorkspaceQ") || m_parent->isChild())
     m_parent->setProperty("OutputWorkspaceQ", converted);
-  outputWorkspace(converted, "ConvertedWorkspaceQ");
+  outputWorkspace(converted, Tasks::ConvertToQ::Outputs::ConvertedWorkspaceQ);
 }
 
 void ReflectometryReductionOne3::TaskSumDetectorsInQ::executeImpl() {
   auto inputWS = getDependantWorkspace("InputWorkspace");
   auto summedInQ = m_parent->sumInQ(inputWS);
-  outputWorkspace(summedInQ, "QSummedWorkspace");
+  outputWorkspace(summedInQ, Tasks::SumDetectorsInQ::Outputs::QSummedWorkspace);
 }
 
 void ReflectometryReductionOne3::TaskNormalizeByAlgorithm::executeImpl() {
   auto inputWS = getDependantWorkspace("InputWorkspace");
   auto algCorrected = m_parent->algorithmicCorrection(inputWS);
-  outputWorkspace(algCorrected, "AlgorithmCorrectedWorkspace");
+  outputWorkspace(algCorrected, Tasks::NormalizeByAlgorithm::Outputs::AlgorithmCorrectedWorkspace);
 }
 
 } // namespace Mantid::Reflectometry

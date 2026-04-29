@@ -25,6 +25,70 @@ class HistogramE;
 } // namespace HistogramData
 namespace Reflectometry {
 
+struct Tasks {
+  struct NormalizeByMonitor {
+    static constexpr const char *name = "TaskNormalizeByMonitor";
+    struct Outputs {
+      static constexpr const char *MonitorCorrectedWorkspace = "MonitorCorrectedWorkspace";
+    };
+  };
+  struct NormalizeByTransmission {
+    static constexpr const char *name = "TaskNormalizeByTransmission";
+    struct Outputs {
+      static constexpr const char *TransmissionCorrectedWorkspace = "TransmissionCorrectedWorkspace";
+      static constexpr const char *TransmissionWorkspace = "TransmissionWorkspace";
+    };
+  };
+  struct NormalizeByAlgorithm {
+    static constexpr const char *name = "TaskNormalizeByAlgorithm";
+    struct Outputs {
+      static constexpr const char *AlgorithmCorrectedWorkspace = "AlgorithmCorrectedWorkspace";
+    };
+  };
+  struct SumDetectorsInQ {
+    static constexpr const char *name = "TaskSumDetectorsInQ";
+    struct Outputs {
+      static constexpr const char *QSummedWorkspace = "QSummedWorkspace";
+    };
+  };
+  struct CropWavelength {
+    static constexpr const char *name = "TaskCropWavelength";
+    struct Outputs {
+      static constexpr const char *CroppedWorkspace = "CroppedWorkspace";
+    };
+  };
+  struct ConvertToQ {
+    static constexpr const char *name = "TaskConvertToQ";
+    struct Outputs {
+      static constexpr const char *ConvertedWorkspaceQ = "ConvertedWorkspaceQ";
+    };
+  };
+  struct ConvertToWavelength {
+    static constexpr const char *name = "TaskConvertToWavelength";
+    struct Outputs {
+      static constexpr const char *ConvertedWorkspaceWavelength = "ConvertedWorkspaceWavelength";
+    };
+  };
+  struct SumDetectors {
+    static constexpr const char *name = "TaskSumDetectors";
+    struct Outputs {
+      static constexpr const char *SummedWorkspace = "SummedWorkspace";
+    };
+  };
+  struct BackgroundSubtraction {
+    static constexpr const char *name = "TaskBackgroundSubtraction";
+    struct Outputs {
+      static constexpr const char *BackgroundSubtractedWorkspace = "BackgroundSubtractedWorkspace";
+    };
+  };
+  struct ExtractROI {
+    static constexpr const char *name = "TaskExtractROI";
+    struct Outputs {
+      static constexpr const char *ExtractedROIWorkspace = "ExtractedROIWorkspace";
+    };
+  };
+};
+
 /** ReflectometryReductionOne3 : Reflectometry reduction of a single input TOF
  workspace to an IvsQ workspace. Version 3 of the algorithm.
  */
@@ -138,9 +202,9 @@ private:
   class TaskBackgroundSubtraction final : public AlgorithmTask {
   public:
     explicit TaskBackgroundSubtraction(ReflectometryReductionOne3 *parent)
-        : AlgorithmTask(parent, "TaskBackgroundSubtraction") {
-      setExpectedOutputs({"BackgroundSubtractedWorkspace"});
-      setDependantTask("TaskExtractROI", "ExtractedROIWorkspace", "InputWorkspace");
+        : AlgorithmTask(parent, Tasks::BackgroundSubtraction::name) {
+      setExpectedOutputs({Tasks::BackgroundSubtraction::Outputs::BackgroundSubtractedWorkspace});
+      setDependantTask(Tasks::ExtractROI::name, Tasks::ExtractROI::Outputs::ExtractedROIWorkspace, "InputWorkspace");
     }
     void executeImpl() override;
   };
@@ -148,11 +212,13 @@ private:
   class TaskConvertToWavelength final : public AlgorithmTask {
   public:
     explicit TaskConvertToWavelength(ReflectometryReductionOne3 *parent)
-        : AlgorithmTask(parent, "TaskConvertToWavelength") {
-      setExpectedOutputs({"ConvertedWorkspaceWavelength"});
-      setDependantTask("TaskBackgroundSubtraction", "BackgroundSubtractedWorkspace", "InputWorkspace");
+        : AlgorithmTask(parent, Tasks::ConvertToWavelength::name) {
+      setExpectedOutputs({Tasks::ConvertToWavelength::Outputs::ConvertedWorkspaceWavelength});
+      setDependantTask(Tasks::BackgroundSubtraction::name,
+                       Tasks::BackgroundSubtraction::Outputs::BackgroundSubtractedWorkspace, "InputWorkspace");
       const auto taskSet = addDependantTaskSet();
-      setDependantTask("TaskSumDetectors", "SummedWorkspace", "InputWorkspace", taskSet);
+      setDependantTask(Tasks::SumDetectors::name, Tasks::SumDetectors::Outputs::SummedWorkspace, "InputWorkspace",
+                       taskSet);
     }
     void executeImpl() override;
   };
@@ -160,11 +226,12 @@ private:
   class TaskNormalizeByMonitor final : public AlgorithmTask {
   public:
     explicit TaskNormalizeByMonitor(ReflectometryReductionOne3 *parent)
-        : AlgorithmTask(parent, "TaskNormalizeByMonitor") {
-      setExpectedOutputs({"MonitorCorrectedWorkspace"});
-      setDependantTask("TaskSumDetectors", "SummedWorkspace", "InputWorkspace");
+        : AlgorithmTask(parent, Tasks::NormalizeByMonitor::name) {
+      setExpectedOutputs({Tasks::NormalizeByMonitor::Outputs::MonitorCorrectedWorkspace});
+      setDependantTask(Tasks::SumDetectors::name, Tasks::SumDetectors::Outputs::SummedWorkspace, "InputWorkspace");
       const auto taskSet = addDependantTaskSet();
-      setDependantTask("TaskConvertToWavelength", "ConvertedWorkspaceWavelength", "InputWorkspace", taskSet);
+      setDependantTask(Tasks::ConvertToWavelength::name,
+                       Tasks::ConvertToWavelength::Outputs::ConvertedWorkspaceWavelength, "InputWorkspace", taskSet);
     }
     void executeImpl() override;
   };
@@ -172,13 +239,16 @@ private:
   class TaskNormalizeByTransmission final : public AlgorithmTask {
   public:
     explicit TaskNormalizeByTransmission(ReflectometryReductionOne3 *parent)
-        : AlgorithmTask(parent, "TaskNormalizeByTransmission") {
-      setExpectedOutputs({"TransmissionCorrectedWorkspace"});
-      setDependantTask("TaskNormalizeByMonitor", "MonitorCorrectedWorkspace", "InputWorkspace");
+        : AlgorithmTask(parent, Tasks::NormalizeByTransmission::name) {
+      setExpectedOutputs({Tasks::NormalizeByTransmission::Outputs::TransmissionCorrectedWorkspace});
+      setDependantTask(Tasks::NormalizeByMonitor::name, Tasks::NormalizeByMonitor::Outputs::MonitorCorrectedWorkspace,
+                       "InputWorkspace");
       const auto taskSet1 = addDependantTaskSet();
-      setDependantTask("TaskConvertToWavelength", "ConvertedWorkspaceWavelength", "InputWorkspace", taskSet1);
+      setDependantTask(Tasks::ConvertToWavelength::name,
+                       Tasks::ConvertToWavelength::Outputs::ConvertedWorkspaceWavelength, "InputWorkspace", taskSet1);
       const auto taskSet2 = addDependantTaskSet();
-      setDependantTask("TaskCropWavelength", "CroppedWorkspace", "InputWorkspace", taskSet2);
+      setDependantTask(Tasks::CropWavelength::name, Tasks::CropWavelength::Outputs::CroppedWorkspace, "InputWorkspace",
+                       taskSet2);
     }
     void executeImpl() override;
   };
@@ -186,75 +256,96 @@ private:
   class TaskNormalizeByAlgorithm final : public AlgorithmTask {
   public:
     explicit TaskNormalizeByAlgorithm(ReflectometryReductionOne3 *parent)
-        : AlgorithmTask(parent, "TaskNormalizeByAlgorithm") {
-      setExpectedOutputs({"AlgorithmCorrectedWorkspace"});
-      setDependantTask("TaskNormalizeByMonitor", "MonitorCorrectedWorkspace", "InputWorkspace");
+        : AlgorithmTask(parent, Tasks::NormalizeByAlgorithm::name) {
+      setExpectedOutputs({Tasks::NormalizeByAlgorithm::Outputs::AlgorithmCorrectedWorkspace});
+      setDependantTask(Tasks::NormalizeByMonitor::name, Tasks::NormalizeByMonitor::Outputs::MonitorCorrectedWorkspace,
+                       "InputWorkspace");
       const auto taskSet1 = addDependantTaskSet();
-      setDependantTask("TaskConvertToWavelength", "ConvertedWorkspaceWavelength", "InputWorkspace", taskSet1);
+      setDependantTask(Tasks::ConvertToWavelength::name,
+                       Tasks::ConvertToWavelength::Outputs::ConvertedWorkspaceWavelength, "InputWorkspace", taskSet1);
       const auto taskSet2 = addDependantTaskSet();
-      setDependantTask("TaskCropWavelength", "CroppedWorkspace", "InputWorkspace", taskSet2);
+      setDependantTask(Tasks::CropWavelength::name, Tasks::CropWavelength::Outputs::CroppedWorkspace, "InputWorkspace",
+                       taskSet2);
     }
     void executeImpl() override;
   };
 
   class TaskExtractROI final : public AlgorithmTask {
   public:
-    explicit TaskExtractROI(ReflectometryReductionOne3 *parent) : AlgorithmTask(parent, "TaskExtractROI") {
-      setExpectedOutputs({"ExtractedROIWorkspace"});
+    explicit TaskExtractROI(ReflectometryReductionOne3 *parent) : AlgorithmTask(parent, Tasks::ExtractROI::name) {
+      setExpectedOutputs({Tasks::ExtractROI::Outputs::ExtractedROIWorkspace});
     }
     void executeImpl() override;
   };
 
   class TaskSumDetectors final : public AlgorithmTask {
   public:
-    explicit TaskSumDetectors(ReflectometryReductionOne3 *parent) : AlgorithmTask(parent, "TaskSumDetectors") {
-      setExpectedOutputs({"SummedWorkspace"});
-      setDependantTask("TaskConvertToWavelength", "ConvertedWorkspaceWavelength", "InputWorkspace");
+    explicit TaskSumDetectors(ReflectometryReductionOne3 *parent) : AlgorithmTask(parent, Tasks::SumDetectors::name) {
+      setExpectedOutputs({Tasks::SumDetectors::Outputs::SummedWorkspace});
+      setDependantTask(Tasks::ConvertToWavelength::name,
+                       Tasks::ConvertToWavelength::Outputs::ConvertedWorkspaceWavelength, "InputWorkspace");
       const auto taskSet1 = addDependantTaskSet();
-      setDependantTask("TaskBackgroundSubtraction", "BackgroundSubtractedWorkspace", "InputWorkspace", taskSet1);
+      setDependantTask(Tasks::BackgroundSubtraction::name,
+                       Tasks::BackgroundSubtraction::Outputs::BackgroundSubtractedWorkspace, "InputWorkspace",
+                       taskSet1);
       const auto taskSet2 = addDependantTaskSet();
-      setDependantTask("TaskExtractROI", "ExtractedROIWorkspace", "InputWorkspace", taskSet2);
+      setDependantTask(Tasks::ExtractROI::name, Tasks::ExtractROI::Outputs::ExtractedROIWorkspace, "InputWorkspace",
+                       taskSet2);
     }
     void executeImpl() override;
   };
 
   class TaskSumDetectorsInQ final : public AlgorithmTask {
   public:
-    explicit TaskSumDetectorsInQ(ReflectometryReductionOne3 *parent) : AlgorithmTask(parent, "TaskSumDetectorsInQ") {
-      setExpectedOutputs({"QSummedWorkspace"});
-      setDependantTask("TaskNormalizeByMonitor", "MonitorCorrectedWorkspace", "InputWorkspace");
+    explicit TaskSumDetectorsInQ(ReflectometryReductionOne3 *parent)
+        : AlgorithmTask(parent, Tasks::SumDetectorsInQ::name) {
+      setExpectedOutputs({Tasks::SumDetectorsInQ::Outputs::QSummedWorkspace});
+      setDependantTask(Tasks::NormalizeByMonitor::name, Tasks::NormalizeByMonitor::Outputs::MonitorCorrectedWorkspace,
+                       "InputWorkspace");
       const auto taskSet1 = addDependantTaskSet();
-      setDependantTask("TaskNormalizeByTransmission", "TransmissionCorrectedWorkspace", "InputWorkspace", taskSet1);
+      setDependantTask(Tasks::NormalizeByTransmission::name,
+                       Tasks::NormalizeByTransmission::Outputs::TransmissionCorrectedWorkspace, "InputWorkspace",
+                       taskSet1);
       const auto taskSet2 = addDependantTaskSet();
-      setDependantTask("TaskConvertToWavelength", "ConvertedWorkspaceWavelength", "InputWorkspace", taskSet2);
+      setDependantTask(Tasks::ConvertToWavelength::name,
+                       Tasks::ConvertToWavelength::Outputs::ConvertedWorkspaceWavelength, "InputWorkspace", taskSet2);
     }
     void executeImpl() override;
   };
 
   class TaskCropWavelength final : public AlgorithmTask {
   public:
-    explicit TaskCropWavelength(ReflectometryReductionOne3 *parent) : AlgorithmTask(parent, "TaskCropWavelength") {
-      setExpectedOutputs({"CroppedWorkspace"});
-      setDependantTask("TaskNormalizeByMonitor", "MonitorCorrectedWorkspace", "InputWorkspace");
+    explicit TaskCropWavelength(ReflectometryReductionOne3 *parent)
+        : AlgorithmTask(parent, Tasks::CropWavelength::name) {
+      setExpectedOutputs({Tasks::CropWavelength::Outputs::CroppedWorkspace});
+      setDependantTask(Tasks::NormalizeByMonitor::name, Tasks::NormalizeByMonitor::Outputs::MonitorCorrectedWorkspace,
+                       "InputWorkspace");
       const auto taskSet1 = addDependantTaskSet();
-      setDependantTask("TaskNormalizeByTransmission", "TransmissionCorrectedWorkspace", "InputWorkspace", taskSet1);
+      setDependantTask(Tasks::NormalizeByTransmission::name,
+                       Tasks::NormalizeByTransmission::Outputs::TransmissionCorrectedWorkspace, "InputWorkspace",
+                       taskSet1);
       const auto taskSet2 = addDependantTaskSet();
-      setDependantTask("TaskSumDetectorsInQ", "QSummedWorkspace", "InputWorkspace", taskSet2);
+      setDependantTask(Tasks::SumDetectorsInQ::name, Tasks::SumDetectorsInQ::Outputs::QSummedWorkspace,
+                       "InputWorkspace", taskSet2);
       const auto taskSet3 = addDependantTaskSet();
-      setDependantTask("TaskConvertToWavelength", "ConvertedWorkspaceWavelength", "InputWorkspace", taskSet3);
+      setDependantTask(Tasks::ConvertToWavelength::name,
+                       Tasks::ConvertToWavelength::Outputs::ConvertedWorkspaceWavelength, "InputWorkspace", taskSet3);
     }
     void executeImpl() override;
   };
 
   class TaskConvertToQ final : public AlgorithmTask {
   public:
-    explicit TaskConvertToQ(ReflectometryReductionOne3 *parent) : AlgorithmTask(parent, "TaskConvertToQ") {
-      setExpectedOutputs({"ConvertedWorkspaceQ"});
-      setDependantTask("TaskCropWavelength", "CroppedWorkspace", "InputWorkspace");
+    explicit TaskConvertToQ(ReflectometryReductionOne3 *parent) : AlgorithmTask(parent, Tasks::ConvertToQ::name) {
+      setExpectedOutputs({Tasks::ConvertToQ::Outputs::ConvertedWorkspaceQ});
+      setDependantTask(Tasks::CropWavelength::name, Tasks::CropWavelength::Outputs::CroppedWorkspace, "InputWorkspace");
       const auto taskSet1 = addDependantTaskSet();
-      setDependantTask("TaskNormalizeByTransmission", "TransmissionCorrectedWorkspace", "InputWorkspace", taskSet1);
+      setDependantTask(Tasks::NormalizeByTransmission::name,
+                       Tasks::NormalizeByTransmission::Outputs::TransmissionCorrectedWorkspace, "InputWorkspace",
+                       taskSet1);
       const auto taskSet2 = addDependantTaskSet();
-      setDependantTask("TaskNormalizeByAlgorithm", "AlgorithmCorrectedWorkspace", "InputWorkspace", taskSet2);
+      setDependantTask(Tasks::NormalizeByAlgorithm::name,
+                       Tasks::NormalizeByAlgorithm::Outputs::AlgorithmCorrectedWorkspace, "InputWorkspace", taskSet2);
     }
     void executeImpl() override;
   };
