@@ -59,7 +59,7 @@ anaconda-client = "*"
 
 [feature.package-standalone.dependencies]
 # Pin conda in the base environment to avoid post-link.bat problems
-conda = "24.7.*"
+conda = "24.11.*"
 rattler-index = "*"
 mamba = "<2"
 
